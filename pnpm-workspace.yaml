@@ -1,0 +1,9 @@
+packages:
+  - 'backend'
+  - 'frontend'
+
+allowBuilds:
+  '@scarf/scarf': true
+
+onlyBuiltDependencies:
+  - esbuild

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+
+# SQLite Database & WAL files
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.db
+*.db-journal
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

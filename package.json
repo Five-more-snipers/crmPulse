@@ -1,0 +1,23 @@
+{
+  "name": "devpulse-crm",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DevPulse CRM - Technical Operations, SLA Monitoring & API Integration Management Platform",
+  "scripts": {
+    "dev": "pnpm --parallel --filter backend --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "migrate:backend": "pnpm --filter backend run migrate",
+    "build:frontend": "pnpm --filter frontend build"
+  },
+  "keywords": [
+    "crm",
+    "developer-operations",
+    "sla-monitoring",
+    "sqlite",
+    "express",
+    "react"
+  ],
+  "author": "",
+  "license": "ISC"
+}
