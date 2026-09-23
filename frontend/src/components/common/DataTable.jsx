@@ -45,6 +45,10 @@ export default function DataTable({
   emptyMessage = 'Tidak ada data ditemukan',
   rowKey = (item) => item.id,
 }) {
+  /**
+   * @param {string} key
+   * @param {boolean} [sortable]
+   */
   const handleSort = (key, sortable) => {
     if (!sortable || !onSort) return;
     onSort(key);
