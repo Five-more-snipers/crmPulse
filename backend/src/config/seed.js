@@ -1,6 +1,8 @@
 // @ts-check
 import { clientRepository } from '../repositories/clientRepository.js';
 import { auditRepository } from '../repositories/auditRepository.js';
+import { userRepository } from '../repositories/userRepository.js';
+import { hashPassword } from '../utils/password.js';
 import db from './database.js';
 
 console.log('🌱 [Seeding] Starting technical clients database seed...');
@@ -269,3 +271,60 @@ for (const act of sampleActivities) {
 }
 
 console.log(`✅ [Seeding] Successfully seeded ${sampleClients.length} clients and ${sampleActivities.length} technical activities!`);
+
+// Seed 4 Role Accounts (1 user per required role)
+console.log('👤 [Seeding] Seeding role-based user accounts...');
+const roleUsers = [
+  {
+    id: 'usr-admin-01',
+    email: 'admin@devpulse.io',
+    password: 'admin123',
+    name: 'Sarah Connor',
+    role: 'ADMIN',
+    avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'usr-architect-01',
+    email: 'architect@devpulse.io',
+    password: 'architect123',
+    name: 'Alex Thorne',
+    role: 'ARCHITECT',
+    avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'usr-tam-01',
+    email: 'tam@devpulse.io',
+    password: 'tam123',
+    name: 'Maya Lin',
+    role: 'TAM',
+    avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
+  },
+  {
+    id: 'usr-devops-01',
+    email: 'devops@devpulse.io',
+    password: 'devops123',
+    name: 'Ryan Vance',
+    role: 'DEVOPS',
+    avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+  },
+];
+
+for (const u of roleUsers) {
+  const existing = userRepository.findByEmail(u.email);
+  if (!existing) {
+    const { hash, salt } = hashPassword(u.password);
+    userRepository.create({
+      id: u.id,
+      email: u.email,
+      password_hash: hash,
+      salt,
+      name: u.name,
+      role: /** @type {'ADMIN'|'ARCHITECT'|'TAM'|'DEVOPS'} */ (u.role),
+      avatar_url: u.avatar_url,
+    });
+    console.log(`  + User created: ${u.email} [${u.role}] - ${u.name}`);
+  } else {
+    console.log(`  ~ User already exists: ${u.email} [${u.role}]`);
+  }
+}
+console.log('✅ [Seeding] All role accounts ready!');

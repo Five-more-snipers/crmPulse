@@ -46,6 +46,22 @@ CREATE TABLE IF NOT EXISTS audit_trails (
     new_data TEXT,                             -- Snapshot data JSON sesudah perubahan
     created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- 4. Tabel Pengguna (Users) & Role-Based Access Control
+CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    salt TEXT NOT NULL,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,                        -- 'ADMIN', 'ARCHITECT', 'TAM', 'DEVOPS'
+    avatar_url TEXT,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 `;
 
 try {

@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import db from './config/database.js';
 import clientRoutes from './routes/clientRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import authRoutes from './routes/authRoutes.js';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger.js';
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -27,6 +28,7 @@ app.use(cookieParser());
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/monitoring', activityRoutes);
