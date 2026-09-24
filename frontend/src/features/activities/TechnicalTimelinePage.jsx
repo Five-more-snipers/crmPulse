@@ -6,9 +6,14 @@ import apiClient from '../../services/apiClient';
 import { SeverityBadge, TierBadge } from '../../components/common/StatusBadge';
 import ModalForm from '../../components/common/ModalForm';
 import VirtualAuditLog from './VirtualAuditLog';
+import { useAuthStore } from '../auth/useAuthStore';
 
 export default function TechnicalTimelinePage() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const canAccessAudit = user?.role === 'ADMIN' || user?.role === 'DEVOPS';
+  const canRecordActivity = user?.role === 'ADMIN' || user?.role === 'TAM' || user?.role === 'DEVOPS';
+
   const [showIncidentModal, setShowIncidentModal] = useState(false);
   const [severityFilter, setSeverityFilter] = useState('');
   const [activeSubTab, setActiveSubTab] = useState('timeline'); // 'timeline' | 'audit'
@@ -103,26 +108,62 @@ export default function TechnicalTimelinePage() {
               onClick={() => setActiveSubTab('audit')}
               className={`btn ${activeSubTab === 'audit' ? 'btn-primary' : 'btn-outline-secondary'}`}
             >
-              <i className="bi bi-shield-check me-1"></i>
-              Virtual Audit Log (@virtual)
+              {canAccessAudit ? (
+                <>
+                  <i className="bi bi-shield-check me-1"></i>
+                  Virtual Audit Log (@virtual)
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-lock-fill text-warning me-1"></i>
+                  Audit Trail (Terkunci)
+                </>
+              )}
             </button>
           </div>
 
-          <button
-            onClick={() => {
-              reset();
-              setShowIncidentModal(true);
-            }}
-            className="btn btn-sm btn-danger d-flex align-items-center gap-2"
-          >
-            <i className="bi bi-plus-circle"></i>
-            Catat Insiden / Aktivitas
-          </button>
+          {canRecordActivity ? (
+            <button
+              onClick={() => {
+                reset();
+                setShowIncidentModal(true);
+              }}
+              className="btn btn-sm btn-danger d-flex align-items-center gap-2"
+            >
+              <i className="bi bi-plus-circle"></i>
+              Catat Insiden / Aktivitas
+            </button>
+          ) : (
+            <button
+              disabled
+              className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2 opacity-50"
+              title="Solutions Architect berfokus pada alur Kanban (Pencatatan insiden dikelola oleh DevOps/TAM)"
+              style={{ cursor: 'not-allowed' }}
+            >
+              <i className="bi bi-lock-fill"></i>
+              Catat Aktivitas
+            </button>
+          )}
         </div>
       </div>
 
       {activeSubTab === 'audit' ? (
-        <VirtualAuditLog />
+        canAccessAudit ? (
+          <VirtualAuditLog />
+        ) : (
+          <div className="card glass-panel border-0 p-5 text-center my-3">
+            <div className="d-inline-flex p-3 rounded-circle bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger mb-3 mx-auto">
+              <i className="bi bi-shield-slash fs-1"></i>
+            </div>
+            <h4 className="text-white fw-bold mb-2">Akses Audit Trail Dibatasi (403 Forbidden)</h4>
+            <p className="text-secondary small mx-auto mb-3" style={{ maxWidth: 520 }}>
+              Virtual Audit Trail memuat rekam jejak investigasi keamanan sistem dan perubahan parameter teknis sensitif. Modul ini dibatasi khusus untuk Platform Security Administrator dan DevOps / SRE Lead.
+            </p>
+            <div className="badge bg-dark border border-secondary border-opacity-50 text-secondary py-2 px-3 mx-auto">
+              Role Anda saat ini: <strong className="text-white ms-1">{user?.role}</strong> (Akses Ditolak)
+            </div>
+          </div>
+        )
       ) : (
         <>
           {/* Filter Bar */}

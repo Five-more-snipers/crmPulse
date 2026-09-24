@@ -23,9 +23,12 @@ export const DEMO_CREDENTIALS = {
 
 const SAVED_TOKEN_KEY = 'devpulse_access_token';
 const SAVED_USER_KEY = 'devpulse_user_data';
+const SAVED_MODE_KEY = 'devpulse_is_demo_mode';
 
 // Initial state from localStorage if present
 const initialToken = typeof window !== 'undefined' ? localStorage.getItem(SAVED_TOKEN_KEY) : null;
+const initialDemoMode = typeof window !== 'undefined' ? localStorage.getItem(SAVED_MODE_KEY) === 'true' : false;
+
 let initialUser = null;
 try {
   const storedUser = typeof window !== 'undefined' ? localStorage.getItem(SAVED_USER_KEY) : null;
@@ -41,6 +44,16 @@ export const useAuthStore = create((set, get) => ({
   isLoading: false,
   isCheckingAuth: true,
   error: null,
+  isDemoMode: initialDemoMode,
+
+  /**
+   * Set demo mode vs standard test mode
+   * @param {boolean} isDemo
+   */
+  setDemoMode: (isDemo) => {
+    localStorage.setItem(SAVED_MODE_KEY, String(isDemo));
+    set({ isDemoMode: isDemo });
+  },
 
   /**
    * Clear any existing error message
@@ -51,8 +64,9 @@ export const useAuthStore = create((set, get) => ({
    * Log in with email and password
    * @param {string} email
    * @param {string} password
+   * @param {boolean} [isDemo=false] - Whether this session is running in Demo Mode or Test Mode
    */
-  login: async (email, password) => {
+  login: async (email, password, isDemo = false) => {
     set({ isLoading: true, error: null });
     try {
       const response = await apiClient.post('/auth/login', { email, password });
@@ -60,12 +74,14 @@ export const useAuthStore = create((set, get) => ({
 
       localStorage.setItem(SAVED_TOKEN_KEY, accessToken);
       localStorage.setItem(SAVED_USER_KEY, JSON.stringify(user));
+      localStorage.setItem(SAVED_MODE_KEY, String(isDemo));
 
       set({
         user,
         accessToken,
         isAuthenticated: true,
         isLoading: false,
+        isDemoMode: isDemo,
         error: null,
       });
 
@@ -78,13 +94,13 @@ export const useAuthStore = create((set, get) => ({
   },
 
   /**
-   * Quick 1-click login using one of the pre-seeded roles
+   * Quick 1-click login using one of the pre-seeded roles (Always activates Demo Mode)
    * @param {'ADMIN'|'ARCHITECT'|'TAM'|'DEVOPS'} role
    */
   quickLoginAs: async (role) => {
     const cred = DEMO_CREDENTIALS[role];
     if (!cred) return { success: false, message: 'Role tidak ditemukan' };
-    return get().login(cred.email, cred.password);
+    return get().login(cred.email, cred.password, true);
   },
 
   /**
@@ -99,6 +115,7 @@ export const useAuthStore = create((set, get) => ({
     } finally {
       localStorage.removeItem(SAVED_TOKEN_KEY);
       localStorage.removeItem(SAVED_USER_KEY);
+      // We keep SAVED_MODE_KEY so user returns to their chosen tab preference on login page
       set({
         user: null,
         accessToken: null,
@@ -135,7 +152,6 @@ export const useAuthStore = create((set, get) => ({
         isCheckingAuth: false,
       });
     } catch (err) {
-      // If verification fails, try refreshing or clear
       localStorage.removeItem(SAVED_TOKEN_KEY);
       localStorage.removeItem(SAVED_USER_KEY);
       set({

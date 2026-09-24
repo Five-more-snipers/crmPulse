@@ -8,6 +8,7 @@ import WebhookMonitoringPage from './features/monitoring/WebhookMonitoringPage';
 import TechnicalTimelinePage from './features/activities/TechnicalTimelinePage';
 import ComponentShowcase from './features/storybook/ComponentShowcase';
 import LoginPage from './features/auth/LoginPage';
+import RolePermissionGuide from './components/common/RolePermissionGuide';
 import { useAuthStore, DEMO_CREDENTIALS } from './features/auth/useAuthStore';
 
 /**
@@ -29,9 +30,27 @@ const ROLE_BADGE_CONFIG = {
 };
 
 export default function App() {
-  const { user, isAuthenticated, isCheckingAuth, checkAuth, logout, quickLoginAs, isLoading } = useAuthStore();
+  const { user, isAuthenticated, isCheckingAuth, checkAuth, logout, quickLoginAs, isLoading, isDemoMode } = useAuthStore();
   const [activeTab, setActiveTab] = useState('clients');
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const dropdownRef = React.useRef(null);
+
+  // Close user dropdown when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      // @ts-ignore
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowUserDropdown(false);
+      }
+    };
+    if (showUserDropdown) {
+      document.addEventListener('click', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('click', handleOutsideClick);
+    };
+  }, [showUserDropdown]);
 
   // Initialize and check authentication on mount
   useEffect(() => {
@@ -230,13 +249,13 @@ export default function App() {
             </button>
 
             {/* User Profile Pill & Quick Role Switcher */}
-            <div className="dropdown">
+            <div className="dropdown position-relative" ref={dropdownRef}>
               <button
                 className="btn btn-sm btn-dark border border-secondary border-opacity-50 dropdown-toggle d-flex align-items-center gap-2 py-1 px-2"
                 type="button"
                 id="userDropdown"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
+                onClick={() => setShowUserDropdown((prev) => !prev)}
+                aria-expanded={showUserDropdown}
               >
                 {user.avatar_url ? (
                   <img
@@ -263,9 +282,11 @@ export default function App() {
               </button>
 
               <ul
-                className="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg border-secondary border-opacity-25"
+                className={`dropdown-menu dropdown-menu-dark dropdown-menu-end shadow-lg border-secondary border-opacity-25 ${
+                  showUserDropdown ? 'show' : ''
+                }`}
                 aria-labelledby="userDropdown"
-                style={{ minWidth: '260px' }}
+                style={{ minWidth: '260px', position: 'absolute', right: 0, top: '100%', zIndex: 1050 }}
               >
                 <li className="px-3 py-2 border-bottom border-secondary border-opacity-25">
                   <div className="fw-semibold text-white small">{user.name}</div>
@@ -274,84 +295,103 @@ export default function App() {
                   </div>
                 </li>
 
-                <li className="px-3 pt-2 pb-1">
-                  <span className="text-secondary small fw-bold text-uppercase" style={{ fontSize: '0.65rem' }}>
-                    Ganti Role Demo (1-Click Switch)
-                  </span>
-                </li>
+                {isDemoMode && (
+                  <>
+                    <li className="px-3 pt-2 pb-1">
+                      <span className="text-secondary small fw-bold text-uppercase" style={{ fontSize: '0.65rem' }}>
+                        Ganti Role Demo (1-Click Switch)
+                      </span>
+                    </li>
 
-                <li>
-                  <button
-                    className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
-                      user.role === 'ADMIN' ? 'active' : ''
-                    }`}
-                    onClick={() => handleSwitchRole('ADMIN')}
-                    disabled={isSwitchingRole}
-                  >
-                    <div className="d-flex align-items-center gap-2">
-                      <i className="bi bi-shield-lock-fill text-danger"></i>
-                      <span>Sarah Connor</span>
-                    </div>
-                    <span className="badge bg-danger py-0">ADMIN</span>
-                  </button>
-                </li>
+                    <li>
+                      <button
+                        className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
+                          user.role === 'ADMIN' ? 'active' : ''
+                        }`}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleSwitchRole('ADMIN');
+                        }}
+                        disabled={isSwitchingRole}
+                      >
+                        <div className="d-flex align-items-center gap-2">
+                          <i className="bi bi-shield-lock-fill text-danger"></i>
+                          <span>Sarah Connor</span>
+                        </div>
+                        <span className="badge bg-danger py-0">ADMIN</span>
+                      </button>
+                    </li>
 
-                <li>
-                  <button
-                    className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
-                      user.role === 'ARCHITECT' ? 'active' : ''
-                    }`}
-                    onClick={() => handleSwitchRole('ARCHITECT')}
-                    disabled={isSwitchingRole}
-                  >
-                    <div className="d-flex align-items-center gap-2">
-                      <i className="bi bi-diagram-3-fill text-primary"></i>
-                      <span>Alex Thorne</span>
-                    </div>
-                    <span className="badge bg-primary py-0">ARCHITECT</span>
-                  </button>
-                </li>
+                    <li>
+                      <button
+                        className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
+                          user.role === 'ARCHITECT' ? 'active' : ''
+                        }`}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleSwitchRole('ARCHITECT');
+                        }}
+                        disabled={isSwitchingRole}
+                      >
+                        <div className="d-flex align-items-center gap-2">
+                          <i className="bi bi-diagram-3-fill text-primary"></i>
+                          <span>Alex Thorne</span>
+                        </div>
+                        <span className="badge bg-primary py-0">ARCHITECT</span>
+                      </button>
+                    </li>
 
-                <li>
-                  <button
-                    className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
-                      user.role === 'TAM' ? 'active' : ''
-                    }`}
-                    onClick={() => handleSwitchRole('TAM')}
-                    disabled={isSwitchingRole}
-                  >
-                    <div className="d-flex align-items-center gap-2">
-                      <i className="bi bi-person-check-fill text-success"></i>
-                      <span>Maya Lin</span>
-                    </div>
-                    <span className="badge bg-success py-0">TAM</span>
-                  </button>
-                </li>
+                    <li>
+                      <button
+                        className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
+                          user.role === 'TAM' ? 'active' : ''
+                        }`}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleSwitchRole('TAM');
+                        }}
+                        disabled={isSwitchingRole}
+                      >
+                        <div className="d-flex align-items-center gap-2">
+                          <i className="bi bi-person-check-fill text-success"></i>
+                          <span>Maya Lin</span>
+                        </div>
+                        <span className="badge bg-success py-0">TAM</span>
+                      </button>
+                    </li>
 
-                <li>
-                  <button
-                    className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
-                      user.role === 'DEVOPS' ? 'active' : ''
-                    }`}
-                    onClick={() => handleSwitchRole('DEVOPS')}
-                    disabled={isSwitchingRole}
-                  >
-                    <div className="d-flex align-items-center gap-2">
-                      <i className="bi bi-cpu-fill text-warning"></i>
-                      <span>Ryan Vance</span>
-                    </div>
-                    <span className="badge bg-warning text-dark py-0">DEVOPS</span>
-                  </button>
-                </li>
+                    <li>
+                      <button
+                        className={`dropdown-item small d-flex align-items-center justify-content-between py-2 ${
+                          user.role === 'DEVOPS' ? 'active' : ''
+                        }`}
+                        onClick={() => {
+                          setShowUserDropdown(false);
+                          handleSwitchRole('DEVOPS');
+                        }}
+                        disabled={isSwitchingRole}
+                      >
+                        <div className="d-flex align-items-center gap-2">
+                          <i className="bi bi-cpu-fill text-warning"></i>
+                          <span>Ryan Vance</span>
+                        </div>
+                        <span className="badge bg-warning text-dark py-0">DEVOPS</span>
+                      </button>
+                    </li>
 
-                <li>
-                  <hr className="dropdown-divider border-secondary border-opacity-25" />
-                </li>
+                    <li>
+                      <hr className="dropdown-divider border-secondary border-opacity-25" />
+                    </li>
+                  </>
+                )}
 
                 <li>
                   <button
                     className="dropdown-item small text-danger d-flex align-items-center gap-2 py-2"
-                    onClick={() => logout()}
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      logout();
+                    }}
                   >
                     <i className="bi bi-box-arrow-right"></i>
                     <span>Keluar (Logout)</span>
@@ -359,6 +399,16 @@ export default function App() {
                 </li>
               </ul>
             </div>
+
+            {/* Standalone Direct Logout Button */}
+            <button
+              onClick={() => logout()}
+              className="btn btn-sm btn-outline-danger d-flex align-items-center gap-1 py-1 px-2 shadow-sm"
+              title="Keluar dari akun (Logout)"
+            >
+              <i className="bi bi-box-arrow-right"></i>
+              <span className="d-none d-md-inline small">Logout</span>
+            </button>
           </div>
         </div>
       </nav>
@@ -382,41 +432,55 @@ export default function App() {
           </div>
 
           <div className="d-flex align-items-center gap-2 py-1">
-            <span className="text-secondary small d-none d-sm-inline">Demo Switch:</span>
-            <div className="btn-group btn-group-sm" role="group">
-              <button
-                type="button"
-                className={`btn btn-xs py-0 px-2 ${user.role === 'ADMIN' ? 'btn-danger' : 'btn-outline-secondary'}`}
-                onClick={() => handleSwitchRole('ADMIN')}
-                title="Beralih ke Platform Admin"
-              >
-                Admin
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs py-0 px-2 ${user.role === 'ARCHITECT' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                onClick={() => handleSwitchRole('ARCHITECT')}
-                title="Beralih ke Solutions Architect"
-              >
-                Architect
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs py-0 px-2 ${user.role === 'TAM' ? 'btn-success' : 'btn-outline-secondary'}`}
-                onClick={() => handleSwitchRole('TAM')}
-                title="Beralih ke Tech Account Manager"
-              >
-                TAM
-              </button>
-              <button
-                type="button"
-                className={`btn btn-xs py-0 px-2 ${user.role === 'DEVOPS' ? 'btn-warning text-dark' : 'btn-outline-secondary'}`}
-                onClick={() => handleSwitchRole('DEVOPS')}
-                title="Beralih ke DevOps / SRE"
-              >
-                DevOps
-              </button>
-            </div>
+            {isDemoMode ? (
+              <>
+                <span className="text-secondary small d-none d-sm-inline">Demo Switch:</span>
+                <div className="btn-group btn-group-sm" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-xs py-0 px-2 ${user.role === 'ADMIN' ? 'btn-danger' : 'btn-outline-secondary'}`}
+                    onClick={() => handleSwitchRole('ADMIN')}
+                    title="Beralih ke Platform Admin"
+                  >
+                    Admin
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-xs py-0 px-2 ${user.role === 'ARCHITECT' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    onClick={() => handleSwitchRole('ARCHITECT')}
+                    title="Beralih ke Solutions Architect"
+                  >
+                    Architect
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-xs py-0 px-2 ${user.role === 'TAM' ? 'btn-success' : 'btn-outline-secondary'}`}
+                    onClick={() => handleSwitchRole('TAM')}
+                    title="Beralih ke Tech Account Manager"
+                  >
+                    TAM
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-xs py-0 px-2 ${user.role === 'DEVOPS' ? 'btn-warning text-dark' : 'btn-outline-secondary'}`}
+                    onClick={() => handleSwitchRole('DEVOPS')}
+                    title="Beralih ke DevOps / SRE"
+                  >
+                    DevOps
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="d-flex align-items-center gap-2">
+                <span className="badge bg-secondary bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-1 small">
+                  <i className="bi bi-shield-lock-fill me-1 text-warning"></i>
+                  Mode Uji Terkunci
+                </span>
+                <span className="text-secondary small d-none d-md-inline" style={{ fontSize: '0.75rem' }}>
+                  Akses terikat pada role {user.role}. Ganti akun via Logout.
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -528,6 +592,18 @@ export default function App() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Role Permission Guide Footer (Active in Demo Mode) */}
+        {isDemoMode && (
+          <div className="mt-5">
+            <RolePermissionGuide
+              activeTab={activeTab}
+              currentRole={user?.role}
+              onSwitchRole={handleSwitchRole}
+              isSwitchingRole={isSwitchingRole}
+            />
           </div>
         )}
       </main>

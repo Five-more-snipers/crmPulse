@@ -76,7 +76,7 @@ export const clientController = {
    */
   async createClient(req, res) {
     try {
-      const actor = req.headers['x-actor-name'] || 'Solutions Architect';
+      const actor = req.user?.name || req.headers['x-actor-name'] || 'Solutions Architect';
       const created = await clientService.createClient(req.body, String(actor));
       return res.status(201).json({
         success: true,
@@ -96,7 +96,7 @@ export const clientController = {
    */
   async updateClient(req, res) {
     try {
-      const actor = req.headers['x-actor-name'] || 'Technical Account Manager';
+      const actor = req.user?.name || req.headers['x-actor-name'] || 'Technical Account Manager';
       const updated = await clientService.updateClient(req.params.id, req.body, String(actor));
       return res.json({
         success: true,
@@ -120,7 +120,7 @@ export const clientController = {
       if (!stage) {
         return res.status(400).json({ success: false, message: 'Stage wajib disertakan' });
       }
-      const actor = req.headers['x-actor-name'] || 'Integration Engineer';
+      const actor = req.user?.name || req.headers['x-actor-name'] || 'Integration Engineer';
       const updated = await clientService.updateClientStage(req.params.id, String(stage), String(actor));
       return res.json({
         success: true,
@@ -140,7 +140,7 @@ export const clientController = {
    */
   async deleteClient(req, res) {
     try {
-      const actor = req.headers['x-actor-name'] || 'Platform Admin';
+      const actor = req.user?.name || req.headers['x-actor-name'] || 'Platform Admin';
       const result = await clientService.deleteClient(req.params.id, String(actor));
       return res.json({
         success: true,

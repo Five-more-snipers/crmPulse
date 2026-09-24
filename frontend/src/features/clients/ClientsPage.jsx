@@ -9,6 +9,7 @@ import DataTable from '../../components/common/DataTable';
 import JsonMetadataViewer from '../../components/common/JsonMetadataViewer';
 import ModalForm from '../../components/common/ModalForm';
 import { Modal } from 'react-bootstrap';
+import { useAuthStore } from '../auth/useAuthStore';
 
 // Zod Schema for Client Form
 const clientSchema = z.object({
@@ -23,6 +24,7 @@ const clientSchema = z.object({
 
 export default function ClientsPage() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
 
   // State Filters & Pagination
   const [searchInput, setSearchInput] = useState('');
@@ -278,13 +280,24 @@ export default function ClientsPage() {
           >
             <i className="bi bi-pencil"></i>
           </button>
-          <button
-            onClick={() => setDeleteConfirmClient(item)}
-            className="btn btn-sm btn-outline-danger py-1 px-2"
-            title="Hapus Klien"
-          >
-            <i className="bi bi-trash"></i>
-          </button>
+          {user?.role === 'ADMIN' ? (
+            <button
+              onClick={() => setDeleteConfirmClient(item)}
+              className="btn btn-sm btn-outline-danger py-1 px-2"
+              title="Hapus Klien (Khusus Platform Admin)"
+            >
+              <i className="bi bi-trash"></i>
+            </button>
+          ) : (
+            <button
+              disabled
+              className="btn btn-sm btn-outline-secondary py-1 px-2 opacity-25"
+              title="Hanya Platform Admin yang memiliki izin hapus klien"
+              style={{ cursor: 'not-allowed' }}
+            >
+              <i className="bi bi-lock-fill"></i>
+            </button>
+          )}
         </div>
       ),
     },
@@ -304,16 +317,23 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => {
-            reset();
-            setShowCreateModal(true);
-          }}
-          className="btn btn-primary d-flex align-items-center gap-2"
-        >
-          <i className="bi bi-plus-lg"></i>
-          Tambah Klien Teknis
-        </button>
+        {user?.role !== 'DEVOPS' ? (
+          <button
+            onClick={() => {
+              reset();
+              setShowCreateModal(true);
+            }}
+            className="btn btn-primary d-flex align-items-center gap-2"
+          >
+            <i className="bi bi-plus-lg"></i>
+            Tambah Klien Teknis
+          </button>
+        ) : (
+          <div className="badge bg-dark border border-secondary border-opacity-50 text-secondary py-2 px-3 small d-flex align-items-center gap-2">
+            <i className="bi bi-shield-lock text-warning"></i>
+            <span>DevOps: Onboarding dikelola oleh TAM & Architect</span>
+          </div>
+        )}
       </div>
 
       {/* Filter Toolbar */}

@@ -5,6 +5,7 @@ import apiClient from '../../services/apiClient';
 import { TierBadge } from '../../components/common/StatusBadge';
 import JsonMetadataViewer from '../../components/common/JsonMetadataViewer';
 import { Modal } from 'react-bootstrap';
+import { useAuthStore } from '../auth/useAuthStore';
 
 const STAGES = [
   { key: 'sandbox', label: '1. Sandbox Environment', color: 'secondary', icon: 'bi-box-seam' },
@@ -16,6 +17,9 @@ const STAGES = [
 
 export default function KanbanBoard() {
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const canModifyStage = user?.role === 'ADMIN' || user?.role === 'ARCHITECT';
+
   const [selectedClientForMeta, setSelectedClientForMeta] = useState(null);
   const [tierFilter, setTierFilter] = useState('');
   const [draggedClientId, setDraggedClientId] = useState(null);
@@ -80,6 +84,7 @@ export default function KanbanBoard() {
 
   const handleDrop = (e, targetStage) => {
     e.preventDefault();
+    if (!canModifyStage) return;
     const clientId = e.dataTransfer.getData('text/plain') || draggedClientId;
     if (clientId) {
       stageMutation.mutate({ id: clientId, stage: targetStage });
@@ -118,6 +123,15 @@ export default function KanbanBoard() {
       </div>
 
       {/* Kanban Columns */}
+      {!canModifyStage && (
+        <div className="alert alert-warning bg-warning bg-opacity-10 border border-warning border-opacity-25 text-warning py-2 px-3 small d-flex align-items-center gap-2 mb-0">
+          <i className="bi bi-info-circle-fill"></i>
+          <span>
+            Mode Baca (View-Only): Pemindahan tahapan integrasi dibatasi khusus untuk Solutions Architect & Platform Admin. Role Anda ({user?.role}) berstatus pengamat.
+          </span>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="text-center py-5 text-secondary">
           <div className="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
@@ -161,10 +175,12 @@ export default function KanbanBoard() {
                       columnClients.map((client) => (
                         <div
                           key={client.id}
-                          draggable
-                          onDragStart={(e) => handleDragStart(e, client.id)}
-                          className="card bg-black bg-opacity-50 border border-secondary border-opacity-25 p-3 rounded-3 shadow-sm cursor-grab user-select-none hover-border-primary transition-all"
-                          style={{ cursor: 'grab' }}
+                          draggable={canModifyStage}
+                          onDragStart={(e) => canModifyStage && handleDragStart(e, client.id)}
+                          className={`card bg-black bg-opacity-50 border border-secondary border-opacity-25 p-3 rounded-3 shadow-sm user-select-none transition-all ${
+                            canModifyStage ? 'cursor-grab hover-border-primary' : 'opacity-85'
+                          }`}
+                          style={{ cursor: canModifyStage ? 'grab' : 'default' }}
                         >
                           <div className="d-flex justify-content-between align-items-start mb-2">
                             <span className="fw-bold text-white fs-6">{client.company_name}</span>

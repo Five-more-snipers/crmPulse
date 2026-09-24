@@ -3,8 +3,12 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import apiClient from '../../services/apiClient';
 import { WebhookStatusBadge, TierBadge } from '../../components/common/StatusBadge';
+import { useAuthStore } from '../auth/useAuthStore';
 
 export default function WebhookMonitoringPage() {
+  const { user } = useAuthStore();
+  const canProbe = user?.role === 'ADMIN' || user?.role === 'ARCHITECT' || user?.role === 'DEVOPS';
+
   const [probeResults, setProbeResults] = useState({});
   const [activePingingId, setActivePingingId] = useState(null);
 
@@ -223,14 +227,26 @@ export default function WebhookMonitoringPage() {
                       </td>
 
                       <td className="py-3 px-4 text-end">
-                        <button
-                          onClick={() => probeMutation.mutate(client)}
-                          disabled={isPinging || !webhookUrl}
-                          className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2"
-                        >
-                          <i className={`bi bi-broadcast ${isPinging ? 'spin' : ''}`}></i>
-                          Ping Webhook
-                        </button>
+                        {canProbe ? (
+                          <button
+                            onClick={() => probeMutation.mutate(client)}
+                            disabled={isPinging || !webhookUrl}
+                            className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-2"
+                          >
+                            <i className={`bi bi-broadcast ${isPinging ? 'spin' : ''}`}></i>
+                            Ping Webhook
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1 opacity-50"
+                            title="Role TAM berfokus pada evaluasi SLA klien (Probe teknis dilakukan oleh SRE/Architect)"
+                            style={{ cursor: 'not-allowed' }}
+                          >
+                            <i className="bi bi-eye"></i>
+                            <span>SLA View</span>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

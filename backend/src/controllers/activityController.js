@@ -41,7 +41,7 @@ export const activityController = {
         return res.status(400).json({ success: false, message: 'client_id dan title wajib diisi' });
       }
 
-      const performed_by = req.headers['x-actor-name'] || 'DevOps Engineer';
+      const performed_by = req.user?.name || req.headers['x-actor-name'] || 'DevOps Engineer';
       const created = activityRepository.create({
         client_id,
         title,
