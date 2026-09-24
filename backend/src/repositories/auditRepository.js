@@ -3,18 +3,35 @@ import crypto from 'node:crypto';
 import db from '../config/database.js';
 
 /**
+ * @typedef {Object} AuditTrailRecord
+ * @property {string} id
+ * @property {'CLIENT'|'API_KEY'|'WEBHOOK'|string} entity_type
+ * @property {string} entity_id
+ * @property {'CREATE'|'UPDATE'|'DELETE'|'ROTATE'|string} action
+ * @property {string} changed_by
+ * @property {any} [old_data]
+ * @property {any} [new_data]
+ * @property {string} created_at
+ */
+
+/**
+ * @typedef {Object} AuditLogInput
+ * @property {string} entityType - 'CLIENT' | 'API_KEY' | 'WEBHOOK'
+ * @property {string} entityId - Target entity UUID
+ * @property {'CREATE'|'UPDATE'|'DELETE'|'ROTATE'|string} action
+ * @property {string} [changedBy] - User or system identifier
+ * @property {any} [oldData] - Previous snapshot
+ * @property {any} [newData] - New snapshot
+ */
+
+/**
  * Repository for logging audit trails
  */
 export const auditRepository = {
   /**
    * Log an audit trail entry
-   * @param {Object} params
-   * @param {string} params.entityType - 'CLIENT' | 'API_KEY' | 'WEBHOOK'
-   * @param {string} params.entityId - Target entity UUID
-   * @param {'CREATE'|'UPDATE'|'DELETE'|'ROTATE'} params.action
-   * @param {string} [params.changedBy] - User or system identifier
-   * @param {any} [params.oldData] - Previous snapshot
-   * @param {any} [params.newData] - New snapshot
+   * @param {AuditLogInput} params
+   * @returns {string}
    */
   log({ entityType, entityId, action, changedBy = 'System/Admin', oldData = null, newData = null }) {
     const id = crypto.randomUUID();
@@ -33,6 +50,7 @@ export const auditRepository = {
   /**
    * Retrieve audit trails for an entity
    * @param {string} entityId
+   * @returns {AuditTrailRecord[]}
    */
   findByEntityId(entityId) {
     const stmt = db.prepare(`
@@ -41,10 +59,30 @@ export const auditRepository = {
       ORDER BY created_at DESC
     `);
     const rows = stmt.all(entityId);
-    return rows.map((r) => ({
-      ...r,
-      old_data: r.old_data ? JSON.parse(r.old_data) : null,
-      new_data: r.new_data ? JSON.parse(r.new_data) : null,
-    }));
+    /** @type {AuditTrailRecord[]} */
+    return rows.map((r) => {
+      const row = /** @type {any} */ (r);
+      let parsedOld = null;
+      let parsedNew = null;
+      if (typeof row.old_data === 'string') {
+        try {
+          parsedOld = JSON.parse(row.old_data);
+        } catch {
+          parsedOld = null;
+        }
+      }
+      if (typeof row.new_data === 'string') {
+        try {
+          parsedNew = JSON.parse(row.new_data);
+        } catch {
+          parsedNew = null;
+        }
+      }
+      return {
+        ...row,
+        old_data: parsedOld,
+        new_data: parsedNew,
+      };
+    });
   },
 };
