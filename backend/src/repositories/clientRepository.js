@@ -3,6 +3,30 @@ import crypto from 'node:crypto';
 import db from '../config/database.js';
 
 /**
+ * @typedef {Object} ClientRecord
+ * @property {string} id
+ * @property {string} company_name
+ * @property {string} technical_tier
+ * @property {string} integration_stage
+ * @property {string|null} assigned_engineer_id
+ * @property {number} rate_limit_rps
+ * @property {string} created_at
+ * @property {string} updated_at
+ * @property {Record<string, any>} technical_metadata
+ */
+
+/**
+ * @typedef {Object} ClientInput
+ * @property {string} [id]
+ * @property {string} [company_name]
+ * @property {string} [technical_tier]
+ * @property {string} [integration_stage]
+ * @property {string|null} [assigned_engineer_id]
+ * @property {number} [rate_limit_rps]
+ * @property {Record<string, any>|string} [technical_metadata]
+ */
+
+/**
  * Repository for technical client operations using SQLite
  */
 export const clientRepository = {
@@ -17,6 +41,7 @@ export const clientRepository = {
    * @param {number} [options.limit=10]
    * @param {string} [options.sortBy='created_at']
    * @param {'ASC'|'DESC'} [options.sortOrder='DESC']
+   * @returns {{ clients: ClientRecord[], totalItems: number, totalPages: number, page: number, limit: number }}
    */
   findAll({
     search = '',
@@ -56,7 +81,7 @@ export const clientRepository = {
 
     // 1. Total Count
     const countStmt = db.prepare(`SELECT COUNT(*) as total FROM clients WHERE ${whereClause}`);
-    const countResult = countStmt.get(...params);
+    const countResult = /** @type {{ total: number }} */ (countStmt.get(...params));
     const totalItems = countResult.total;
 
     // 2. Safe Sorting Column Whitelist
@@ -86,10 +111,22 @@ export const clientRepository = {
     const rows = dataStmt.all(...params, safeLimit, offset);
 
     // Parse technical_metadata JSON for each row
-    const clients = rows.map((r) => ({
-      ...r,
-      technical_metadata: r.technical_metadata ? JSON.parse(r.technical_metadata) : {},
-    }));
+    /** @type {ClientRecord[]} */
+    const clients = rows.map((r) => {
+      const row = /** @type {any} */ (r);
+      let metadata = {};
+      if (typeof row.technical_metadata === 'string') {
+        try {
+          metadata = JSON.parse(row.technical_metadata);
+        } catch {
+          metadata = {};
+        }
+      }
+      return {
+        ...row,
+        technical_metadata: metadata,
+      };
+    });
 
     return {
       clients,
@@ -103,29 +140,41 @@ export const clientRepository = {
   /**
    * Find single client by ID
    * @param {string} id
+   * @returns {ClientRecord|null}
    */
   findById(id) {
     const stmt = db.prepare('SELECT * FROM clients WHERE id = ?');
-    const row = stmt.get(id);
+    const row = /** @type {any} */ (stmt.get(id));
     if (!row) return null;
 
-    return {
+    let metadata = {};
+    if (typeof row.technical_metadata === 'string') {
+      try {
+        metadata = JSON.parse(row.technical_metadata);
+      } catch {
+        metadata = {};
+      }
+    }
+
+    return /** @type {ClientRecord} */ ({
       ...row,
-      technical_metadata: row.technical_metadata ? JSON.parse(row.technical_metadata) : {},
-    };
+      technical_metadata: metadata,
+    });
   },
 
   /**
    * Create new client
-   * @param {Object} data
+   * @param {ClientInput} data
+   * @returns {ClientRecord}
    */
   create(data) {
     const id = data.id || crypto.randomUUID();
-    const technicalMetadataJson = data.technical_metadata
-      ? typeof data.technical_metadata === 'string'
-        ? data.technical_metadata
-        : JSON.stringify(data.technical_metadata)
-      : '{}';
+    let technicalMetadataJson = '{}';
+    if (typeof data.technical_metadata === 'string') {
+      technicalMetadataJson = data.technical_metadata;
+    } else if (data.technical_metadata) {
+      technicalMetadataJson = JSON.stringify(data.technical_metadata);
+    }
 
     const stmt = db.prepare(`
       INSERT INTO clients (
@@ -136,7 +185,7 @@ export const clientRepository = {
 
     stmt.run(
       id,
-      data.company_name,
+      data.company_name || '',
       data.technical_tier || 'Standard',
       data.integration_stage || 'sandbox',
       data.assigned_engineer_id || null,
@@ -144,23 +193,29 @@ export const clientRepository = {
       technicalMetadataJson
     );
 
-    return this.findById(id);
+    const created = this.findById(id);
+    if (!created) {
+      throw new Error(`Failed to create client with ID ${id}`);
+    }
+    return created;
   },
 
   /**
    * Update existing client
    * @param {string} id
-   * @param {Object} data
+   * @param {ClientInput} data
+   * @returns {ClientRecord|null}
    */
   update(id, data) {
     const existing = this.findById(id);
     if (!existing) return null;
 
-    const technicalMetadataJson = data.technical_metadata !== undefined
-      ? typeof data.technical_metadata === 'string'
-        ? data.technical_metadata
-        : JSON.stringify(data.technical_metadata)
-      : JSON.stringify(existing.technical_metadata);
+    let technicalMetadataJson = JSON.stringify(existing.technical_metadata);
+    if (typeof data.technical_metadata === 'string') {
+      technicalMetadataJson = data.technical_metadata;
+    } else if (data.technical_metadata !== undefined) {
+      technicalMetadataJson = JSON.stringify(data.technical_metadata);
+    }
 
     const stmt = db.prepare(`
       UPDATE clients SET
@@ -174,12 +229,18 @@ export const clientRepository = {
       WHERE id = ?
     `);
 
+    const updatedCompany = data.company_name !== undefined ? data.company_name : existing.company_name;
+    const updatedTier = data.technical_tier !== undefined ? data.technical_tier : existing.technical_tier;
+    const updatedStage = data.integration_stage !== undefined ? data.integration_stage : existing.integration_stage;
+    const updatedEngineer = (data.assigned_engineer_id !== undefined ? data.assigned_engineer_id : existing.assigned_engineer_id) ?? null;
+    const updatedRps = data.rate_limit_rps !== undefined ? Number(data.rate_limit_rps) : existing.rate_limit_rps;
+
     stmt.run(
-      data.company_name !== undefined ? data.company_name : existing.company_name,
-      data.technical_tier !== undefined ? data.technical_tier : existing.technical_tier,
-      data.integration_stage !== undefined ? data.integration_stage : existing.integration_stage,
-      data.assigned_engineer_id !== undefined ? data.assigned_engineer_id : existing.assigned_engineer_id,
-      data.rate_limit_rps !== undefined ? Number(data.rate_limit_rps) : existing.rate_limit_rps,
+      updatedCompany,
+      updatedTier,
+      updatedStage,
+      updatedEngineer,
+      updatedRps,
       technicalMetadataJson,
       id
     );
@@ -191,6 +252,7 @@ export const clientRepository = {
    * Update client integration stage directly
    * @param {string} id
    * @param {string} stage
+   * @returns {ClientRecord|null}
    */
   updateStage(id, stage) {
     const existing = this.findById(id);
@@ -209,6 +271,7 @@ export const clientRepository = {
   /**
    * Delete client by ID
    * @param {string} id
+   * @returns {boolean}
    */
   delete(id) {
     const existing = this.findById(id);
