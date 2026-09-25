@@ -39,8 +39,9 @@ export default function TechnicalTimelinePage() {
   });
 
   // Create Activity Mutation
+  /** @type {any} */
   const createActivityMutation = useMutation({
-    mutationFn: (newActivity) => apiClient.post('/activities', newActivity),
+    mutationFn: (/** @type {any} */ newActivity) => apiClient.post('/activities', newActivity),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       setShowIncidentModal(false);
@@ -58,13 +59,21 @@ export default function TechnicalTimelinePage() {
     },
   });
 
+  /**
+   * @param {Record<string, any>} data
+   */
   const onSubmit = (data) => {
     createActivityMutation.mutate(data);
   };
 
+  /** @type {Array<Record<string, any>>} */
   const activities = activitiesResponse?.data || [];
+  /** @type {Array<Record<string, any>>} */
   const clients = clientsResponse?.data || [];
 
+  /**
+   * @param {string} type
+   */
   const getActivityIcon = (type) => {
     switch (type) {
       case 'INCIDENT':
@@ -80,6 +89,98 @@ export default function TechnicalTimelinePage() {
     }
   };
 
+  const renderAuditTab = () => {
+    if (canAccessAudit) {
+      return <VirtualAuditLog />;
+    }
+    return (
+      <div className="card glass-panel border-0 p-5 text-center my-3">
+        <div className="d-inline-flex p-3 rounded-circle bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger mb-3 mx-auto">
+          <i className="bi bi-shield-slash fs-1"></i>
+        </div>
+        <h4 className="text-white fw-bold mb-2">Akses Audit Trail Dibatasi (403 Forbidden)</h4>
+        <p className="text-secondary small mx-auto mb-3" style={{ maxWidth: 520 }}>
+          Virtual Audit Trail memuat rekam jejak investigasi keamanan sistem dan perubahan parameter teknis sensitif. Modul ini dibatasi khusus untuk Platform Security Administrator dan DevOps / SRE Lead.
+        </p>
+        <div className="badge bg-dark border border-secondary border-opacity-50 text-secondary py-2 px-3 mx-auto">
+          Role Anda saat ini: <strong className="text-white ms-1">{user?.role}</strong> (Akses Ditolak)
+        </div>
+      </div>
+    );
+  };
+
+  const renderTimelineFeed = () => {
+    if (isLoading) {
+      return (
+        <div className="text-center py-5 text-secondary">
+          <output className="spinner-border text-primary spinner-border-sm me-2"></output>
+          <span>Memuat riwayat aktivitas teknis...</span>
+        </div>
+      );
+    }
+
+    if (activities.length === 0) {
+      return (
+        <div className="text-center py-5 text-secondary opacity-50">
+          <i className="bi bi-check-all fs-1 d-block mb-2"></i>
+          <div>Tidak ada aktivitas atau insiden yang tercatat.</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="position-relative ps-4 ps-md-5 border-start border-secondary border-opacity-25 ms-3 d-flex flex-column gap-4">
+        {activities.map((/** @type {Record<string, any>} */ item) => {
+          const iconConfig = getActivityIcon(item.activity_type);
+
+          return (
+            <div key={item.id} className="position-relative">
+              {/* Timeline Dot Icon */}
+              <div
+                className={`position-absolute top-0 start-0 translate-middle rounded-circle d-flex align-items-center justify-content-center ${iconConfig.bg} ${iconConfig.color}`}
+                style={{ width: '36px', height: '36px', border: '2px solid rgba(255,255,255,0.1)' }}
+              >
+                <i className={`bi ${iconConfig.icon} fs-6`}></i>
+              </div>
+
+              {/* Event Card */}
+              <div className="card bg-black bg-opacity-40 border border-secondary border-opacity-25 p-3 rounded-3 shadow-sm">
+                <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                  <div className="d-flex align-items-center gap-2">
+                    <span className="fw-bold text-white fs-6">{item.title}</span>
+                    <span className="badge bg-dark border border-secondary border-opacity-25 text-info mono-font small">
+                      {item.activity_type}
+                    </span>
+                  </div>
+
+                  <div className="d-flex align-items-center gap-2">
+                    <SeverityBadge severity={item.severity} />
+                    <span className="text-secondary small mono-font">{item.created_at}</span>
+                  </div>
+                </div>
+
+                <p className="text-light small mb-2">{item.content}</p>
+
+                <div className="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-10 small text-secondary">
+                  <span className="d-flex align-items-center gap-2">
+                    <i className="bi bi-building"></i>
+                    <strong className="text-white">{item.company_name}</strong>
+                    <TierBadge tier={item.technical_tier} />
+                  </span>
+
+                  <span className="d-flex align-items-center gap-1">
+                    <i className="bi bi-person-badge text-primary"></i>
+                    {item.performed_by}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="d-flex flex-column gap-4">
       {/* Top Header & Sub-Tab Switcher */}
@@ -87,7 +188,7 @@ export default function TechnicalTimelinePage() {
         <div>
           <h2 className="fs-4 fw-bold text-white mb-1 brand-title d-flex align-items-center gap-2">
             <i className="bi bi-clock-history text-warning"></i>
-            Timeline Aktivitas Teknis & Insiden
+            Timeline{' '}Aktivitas{' '}Teknis{' '}&{' '}Insiden
           </h2>
           <p className="text-secondary small mb-0">
             Pencatatan kronologis riwayat evaluasi teknis, insiden SLA, rotasi kredensial, dan virtualisasi audit trail.
@@ -102,7 +203,7 @@ export default function TechnicalTimelinePage() {
               className={`btn ${activeSubTab === 'timeline' ? 'btn-primary' : 'btn-outline-secondary'}`}
             >
               <i className="bi bi-list-nested me-1"></i>
-              Feed Insiden
+              Feed{' '}Insiden
             </button>
             <button
               onClick={() => setActiveSubTab('audit')}
@@ -111,12 +212,12 @@ export default function TechnicalTimelinePage() {
               {canAccessAudit ? (
                 <>
                   <i className="bi bi-shield-check me-1"></i>
-                  Virtual Audit Log (@virtual)
+                  Virtual{' '}Audit{' '}Log{' '}(@virtual)
                 </>
               ) : (
                 <>
                   <i className="bi bi-lock-fill text-warning me-1"></i>
-                  Audit Trail (Terkunci)
+                  Audit{' '}Trail{' '}(Terkunci)
                 </>
               )}
             </button>
@@ -131,7 +232,7 @@ export default function TechnicalTimelinePage() {
               className="btn btn-sm btn-danger d-flex align-items-center gap-2"
             >
               <i className="bi bi-plus-circle"></i>
-              Catat Insiden / Aktivitas
+              Catat{' '}Insiden{' '}/{' '}Aktivitas
             </button>
           ) : (
             <button
@@ -141,29 +242,14 @@ export default function TechnicalTimelinePage() {
               style={{ cursor: 'not-allowed' }}
             >
               <i className="bi bi-lock-fill"></i>
-              Catat Aktivitas
+              Catat{' '}Aktivitas
             </button>
           )}
         </div>
       </div>
 
       {activeSubTab === 'audit' ? (
-        canAccessAudit ? (
-          <VirtualAuditLog />
-        ) : (
-          <div className="card glass-panel border-0 p-5 text-center my-3">
-            <div className="d-inline-flex p-3 rounded-circle bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger mb-3 mx-auto">
-              <i className="bi bi-shield-slash fs-1"></i>
-            </div>
-            <h4 className="text-white fw-bold mb-2">Akses Audit Trail Dibatasi (403 Forbidden)</h4>
-            <p className="text-secondary small mx-auto mb-3" style={{ maxWidth: 520 }}>
-              Virtual Audit Trail memuat rekam jejak investigasi keamanan sistem dan perubahan parameter teknis sensitif. Modul ini dibatasi khusus untuk Platform Security Administrator dan DevOps / SRE Lead.
-            </p>
-            <div className="badge bg-dark border border-secondary border-opacity-50 text-secondary py-2 px-3 mx-auto">
-              Role Anda saat ini: <strong className="text-white ms-1">{user?.role}</strong> (Akses Ditolak)
-            </div>
-          </div>
-        )
+        renderAuditTab()
       ) : (
         <>
           {/* Filter Bar */}
@@ -187,67 +273,7 @@ export default function TechnicalTimelinePage() {
 
           {/* Timeline Feed Container */}
           <div className="card glass-panel border-0 p-4">
-            {isLoading ? (
-              <div className="text-center py-5 text-secondary">
-                <div className="spinner-border text-primary spinner-border-sm me-2" role="status"></div>
-                Memuat riwayat aktivitas teknis...
-              </div>
-            ) : activities.length === 0 ? (
-              <div className="text-center py-5 text-secondary opacity-50">
-                <i className="bi bi-check-all fs-1 d-block mb-2"></i>
-                Tidak ada aktivitas atau insiden yang tercatat.
-              </div>
-            ) : (
-              <div className="position-relative ps-4 ps-md-5 border-start border-secondary border-opacity-25 ms-3 d-flex flex-column gap-4">
-                {activities.map((item) => {
-                  const iconConfig = getActivityIcon(item.activity_type);
-
-                  return (
-                    <div key={item.id} className="position-relative">
-                      {/* Timeline Dot Icon */}
-                      <div
-                        className={`position-absolute top-0 start-0 translate-middle rounded-circle d-flex align-items-center justify-content-center ${iconConfig.bg} ${iconConfig.color}`}
-                        style={{ width: '36px', height: '36px', border: '2px solid rgba(255,255,255,0.1)' }}
-                      >
-                        <i className={`bi ${iconConfig.icon} fs-6`}></i>
-                      </div>
-
-                      {/* Event Card */}
-                      <div className="card bg-black bg-opacity-40 border border-secondary border-opacity-25 p-3 rounded-3 shadow-sm">
-                        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                          <div className="d-flex align-items-center gap-2">
-                            <span className="fw-bold text-white fs-6">{item.title}</span>
-                            <span className="badge bg-dark border border-secondary border-opacity-25 text-info mono-font small">
-                              {item.activity_type}
-                            </span>
-                          </div>
-
-                          <div className="d-flex align-items-center gap-2">
-                            <SeverityBadge severity={item.severity} />
-                            <span className="text-secondary small mono-font">{item.created_at}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-light small mb-2">{item.content}</p>
-
-                        <div className="d-flex justify-content-between align-items-center pt-2 border-top border-secondary border-opacity-10 small text-secondary">
-                          <span className="d-flex align-items-center gap-2">
-                            <i className="bi bi-building"></i>
-                            <strong className="text-white">{item.company_name}</strong>
-                            <TierBadge tier={item.technical_tier} />
-                          </span>
-
-                          <span className="d-flex align-items-center gap-1">
-                            <i className="bi bi-person-badge text-primary"></i>
-                            {item.performed_by}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+            {renderTimelineFeed()}
           </div>
         </>
       )}
@@ -263,13 +289,13 @@ export default function TechnicalTimelinePage() {
       >
         <div className="row g-3">
           <div className="col-12">
-            <label className="form-label small text-secondary">Pilih Klien Terkait *</label>
+            <label htmlFor="inc-client" className="form-label small text-secondary">Pilih Klien Terkait *</label>
             <select
               className={`form-select bg-dark text-light border-secondary border-opacity-50 ${errors.client_id ? 'is-invalid' : ''}`}
               {...register('client_id', { required: 'Pilih klien korporat' })}
             >
               <option value="">-- Pilih Klien Korporat --</option>
-              {clients.map((c) => (
+              {clients.map((/** @type {Record<string, any>} */ c) => (
                 <option key={c.id} value={c.id}>
                   {c.company_name} ({c.technical_tier})
                 </option>
@@ -278,7 +304,7 @@ export default function TechnicalTimelinePage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Tipe Aktivitas</label>
+            <label htmlFor="inc-type" className="form-label small text-secondary">Tipe Aktivitas</label>
             <select className="form-select bg-dark text-light border-secondary border-opacity-50" {...register('activity_type')}>
               <option value="INCIDENT">INCIDENT (Insiden Teknis)</option>
               <option value="CONFIG_CHANGE">CONFIG_CHANGE (Perubahan Konfigurasi)</option>
@@ -288,7 +314,7 @@ export default function TechnicalTimelinePage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Tingkat Keparahan (Severity)</label>
+            <label htmlFor="inc-severity" className="form-label small text-secondary">Tingkat Keparahan (Severity)</label>
             <select className="form-select bg-dark text-light border-secondary border-opacity-50" {...register('severity')}>
               <option value="LOW">LOW</option>
               <option value="MEDIUM">MEDIUM</option>
@@ -298,7 +324,7 @@ export default function TechnicalTimelinePage() {
           </div>
 
           <div className="col-12">
-            <label className="form-label small text-secondary">Judul Insiden / Evaluasi *</label>
+            <label htmlFor="inc-title" className="form-label small text-secondary">Judul Insiden / Evaluasi *</label>
             <input
               type="text"
               className={`form-control bg-dark text-light border-secondary border-opacity-50 ${errors.title ? 'is-invalid' : ''}`}
@@ -308,7 +334,7 @@ export default function TechnicalTimelinePage() {
           </div>
 
           <div className="col-12">
-            <label className="form-label small text-secondary">Deskripsi / Hasil Analisis Teknis</label>
+            <label htmlFor="inc-content" className="form-label small text-secondary">Deskripsi / Hasil Analisis Teknis</label>
             <textarea
               className="form-control bg-dark text-light border-secondary border-opacity-50 small"
               rows={4}

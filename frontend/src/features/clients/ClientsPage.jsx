@@ -35,13 +35,13 @@ export default function ClientsPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [sortBy, setSortBy] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState('DESC');
+  const [sortOrder, setSortOrder] = useState(/** @type {'ASC'|'DESC'} */ ('DESC'));
 
   // Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editClient, setEditClient] = useState(null);
-  const [inspectMetadataClient, setInspectMetadataClient] = useState(null);
-  const [deleteConfirmClient, setDeleteConfirmClient] = useState(null);
+  const [editClient, setEditClient] = useState(/** @type {Record<string, any> | null} */ (null));
+  const [inspectMetadataClient, setInspectMetadataClient] = useState(/** @type {Record<string, any> | null} */ (null));
+  const [deleteConfirmClient, setDeleteConfirmClient] = useState(/** @type {Record<string, any> | null} */ (null));
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -72,8 +72,9 @@ export default function ClientsPage() {
   });
 
   // Create Mutation
+  /** @type {any} */
   const createMutation = useMutation({
-    mutationFn: (newClient) => apiClient.post('/clients', newClient),
+    mutationFn: (/** @type {any} */ newClient) => apiClient.post('/clients', newClient),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setShowCreateModal(false);
@@ -82,8 +83,9 @@ export default function ClientsPage() {
   });
 
   // Update Mutation
+  /** @type {any} */
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => apiClient.put(`/clients/${id}`, data),
+    mutationFn: (/** @type {any} */ { id, data }) => apiClient.put(`/clients/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setEditClient(null);
@@ -92,8 +94,9 @@ export default function ClientsPage() {
   });
 
   // Delete Mutation
+  /** @type {any} */
   const deleteMutation = useMutation({
-    mutationFn: (id) => apiClient.delete(`/clients/${id}`),
+    mutationFn: (/** @type {any} */ id) => apiClient.delete(`/clients/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setDeleteConfirmClient(null);
@@ -138,6 +141,7 @@ export default function ClientsPage() {
     }
   }, [editClient]);
 
+  /** @param {string} colKey */
   const handleSort = (colKey) => {
     if (sortBy === colKey) {
       setSortOrder(sortOrder === 'ASC' ? 'DESC' : 'ASC');
@@ -147,6 +151,7 @@ export default function ClientsPage() {
     }
   };
 
+  /** @param {Record<string, any>} formData */
   const onSubmitCreate = (formData) => {
     const payload = {
       company_name: formData.company_name,
@@ -162,6 +167,7 @@ export default function ClientsPage() {
     createMutation.mutate(payload);
   };
 
+  /** @param {Record<string, any>} formData */
   const onSubmitEdit = (formData) => {
     if (!editClient) return;
     const payload = {
@@ -180,6 +186,7 @@ export default function ClientsPage() {
   };
 
   // Status Badge Helpers
+  /** @param {string} tier */
   const getTierBadge = (tier) => {
     switch (tier) {
       case 'Mission-Critical':
@@ -191,6 +198,7 @@ export default function ClientsPage() {
     }
   };
 
+  /** @param {string} stage */
   const getStageBadge = (stage) => {
     switch (stage) {
       case 'production':
@@ -212,7 +220,7 @@ export default function ClientsPage() {
       key: 'company_name',
       label: 'Klien Korporat',
       sortable: true,
-      render: (item) => (
+      render: (/** @type {Record<string, any>} */ item) => (
         <div>
           <span className="text-white fw-bold d-block">{item.company_name}</span>
           <span className="text-secondary small mono-font opacity-75">{item.id.slice(0, 8)}...</span>
@@ -223,19 +231,19 @@ export default function ClientsPage() {
       key: 'technical_tier',
       label: 'SLA Tier',
       sortable: true,
-      render: (item) => getTierBadge(item.technical_tier),
+      render: (/** @type {Record<string, any>} */ item) => getTierBadge(item.technical_tier),
     },
     {
       key: 'integration_stage',
       label: 'Tahapan Integrasi',
       sortable: true,
-      render: (item) => getStageBadge(item.integration_stage),
+      render: (/** @type {Record<string, any>} */ item) => getStageBadge(item.integration_stage),
     },
     {
       key: 'rate_limit_rps',
       label: 'Batas Rate (RPS)',
       sortable: true,
-      render: (item) => (
+      render: (/** @type {Record<string, any>} */ item) => (
         <div className="d-flex align-items-center gap-2 mono-font">
           <span className="text-info fw-semibold">{item.rate_limit_rps.toLocaleString()}</span>
           <span className="text-secondary small">req/s</span>
@@ -245,7 +253,7 @@ export default function ClientsPage() {
     {
       key: 'technical_metadata',
       label: 'Dynamic JSON (API Ver / Stack)',
-      render: (item) => {
+      render: (/** @type {Record<string, any>} */ item) => {
         const meta = item.technical_metadata || {};
         return (
           <div className="d-flex align-items-center gap-2">
@@ -271,7 +279,7 @@ export default function ClientsPage() {
       key: 'actions',
       label: 'Aksi',
       className: 'text-end',
-      render: (item) => (
+      render: (/** @type {Record<string, any>} */ item) => (
         <div className="d-flex justify-content-end gap-2">
           <button
             onClick={() => setEditClient(item)}
@@ -310,7 +318,7 @@ export default function ClientsPage() {
         <div>
           <h2 className="fs-4 fw-bold text-white mb-1 brand-title d-flex align-items-center gap-2">
             <i className="bi bi-database-check text-primary"></i>
-            Technical Clients Data Grid
+            <span>Technical Clients Data Grid</span>
           </h2>
           <p className="text-secondary small mb-0">
             Dikelola dengan arsitektur Controller-Service-Repository dan query filter dinamis SQLite JSON1 (<code>json_extract</code>).
@@ -326,7 +334,7 @@ export default function ClientsPage() {
             className="btn btn-primary d-flex align-items-center gap-2"
           >
             <i className="bi bi-plus-lg"></i>
-            Tambah Klien Teknis
+            <span>Tambah Klien Teknis</span>
           </button>
         ) : (
           <div className="badge bg-dark border border-secondary border-opacity-50 text-secondary py-2 px-3 small d-flex align-items-center gap-2">
@@ -454,8 +462,9 @@ export default function ClientsPage() {
       >
         <div className="row g-3">
           <div className="col-12">
-            <label className="form-label small text-secondary">Nama Perusahaan / Korporasi *</label>
+            <label htmlFor="create-company-name" className="form-label small text-secondary">Nama Perusahaan / Korporasi *</label>
             <input
+              id="create-company-name"
               type="text"
               className={`form-control bg-dark text-light border-secondary border-opacity-50 ${errors.company_name ? 'is-invalid' : ''}`}
               placeholder="e.g. Acme Cloud Corp"
@@ -465,8 +474,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Technical Tier (SLA)</label>
+            <label htmlFor="create-technical-tier" className="form-label small text-secondary">Technical Tier (SLA)</label>
             <select
+              id="create-technical-tier"
               className="form-select bg-dark text-light border-secondary border-opacity-50"
               {...register('technical_tier')}
             >
@@ -477,8 +487,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Tahapan Integrasi</label>
+            <label htmlFor="create-integration-stage" className="form-label small text-secondary">Tahapan Integrasi</label>
             <select
+              id="create-integration-stage"
               className="form-select bg-dark text-light border-secondary border-opacity-50"
               {...register('integration_stage')}
             >
@@ -491,8 +502,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Rate Limit (RPS)</label>
+            <label htmlFor="create-rate-limit-rps" className="form-label small text-secondary">Rate Limit (RPS)</label>
             <input
+              id="create-rate-limit-rps"
               type="number"
               className={`form-control bg-dark text-light border-secondary border-opacity-50 ${errors.rate_limit_rps ? 'is-invalid' : ''}`}
               {...register('rate_limit_rps')}
@@ -501,8 +513,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Versi API Klien (JSON Metadata)</label>
+            <label htmlFor="create-api-version" className="form-label small text-secondary">Versi API Klien (JSON Metadata)</label>
             <input
+              id="create-api-version"
               type="text"
               className="form-control bg-dark text-light border-secondary border-opacity-50"
               placeholder="e.g. v2.4"
@@ -511,8 +524,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Runtime Stack (JSON Metadata)</label>
+            <label htmlFor="create-runtime-stack" className="form-label small text-secondary">Runtime Stack (JSON Metadata)</label>
             <input
+              id="create-runtime-stack"
               type="text"
               className="form-control bg-dark text-light border-secondary border-opacity-50"
               placeholder="e.g. Go 1.22, Node.js 20"
@@ -521,8 +535,9 @@ export default function ClientsPage() {
           </div>
 
           <div className="col-md-6">
-            <label className="form-label small text-secondary">Webhook URL (Opsional)</label>
+            <label htmlFor="create-webhook-url" className="form-label small text-secondary">Webhook URL (Opsional)</label>
             <input
+              id="create-webhook-url"
               type="text"
               className={`form-control bg-dark text-light border-secondary border-opacity-50 ${errors.webhook_url ? 'is-invalid' : ''}`}
               placeholder="https://api.client.com/webhook"
@@ -545,8 +560,9 @@ export default function ClientsPage() {
         >
           <div className="row g-3">
             <div className="col-12">
-              <label className="form-label small text-secondary">Nama Perusahaan / Korporasi *</label>
+              <label htmlFor="edit-company-name" className="form-label small text-secondary">Nama Perusahaan / Korporasi *</label>
               <input
+                id="edit-company-name"
                 type="text"
                 className={`form-control bg-dark text-light border-secondary border-opacity-50 ${editForm.formState.errors.company_name ? 'is-invalid' : ''}`}
                 {...editForm.register('company_name')}
@@ -557,8 +573,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Technical Tier (SLA)</label>
+              <label htmlFor="edit-technical-tier" className="form-label small text-secondary">Technical Tier (SLA)</label>
               <select
+                id="edit-technical-tier"
                 className="form-select bg-dark text-light border-secondary border-opacity-50"
                 {...editForm.register('technical_tier')}
               >
@@ -569,8 +586,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Tahapan Integrasi</label>
+              <label htmlFor="edit-integration-stage" className="form-label small text-secondary">Tahapan Integrasi</label>
               <select
+                id="edit-integration-stage"
                 className="form-select bg-dark text-light border-secondary border-opacity-50"
                 {...editForm.register('integration_stage')}
               >
@@ -583,8 +601,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Rate Limit (RPS)</label>
+              <label htmlFor="edit-rate-limit-rps" className="form-label small text-secondary">Rate Limit (RPS)</label>
               <input
+                id="edit-rate-limit-rps"
                 type="number"
                 className={`form-control bg-dark text-light border-secondary border-opacity-50 ${editForm.formState.errors.rate_limit_rps ? 'is-invalid' : ''}`}
                 {...editForm.register('rate_limit_rps')}
@@ -595,8 +614,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Versi API Klien</label>
+              <label htmlFor="edit-api-version" className="form-label small text-secondary">Versi API Klien</label>
               <input
+                id="edit-api-version"
                 type="text"
                 className="form-control bg-dark text-light border-secondary border-opacity-50"
                 {...editForm.register('api_version')}
@@ -604,8 +624,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Runtime Stack</label>
+              <label htmlFor="edit-runtime-stack" className="form-label small text-secondary">Runtime Stack</label>
               <input
+                id="edit-runtime-stack"
                 type="text"
                 className="form-control bg-dark text-light border-secondary border-opacity-50"
                 {...editForm.register('runtime_stack')}
@@ -613,8 +634,9 @@ export default function ClientsPage() {
             </div>
 
             <div className="col-md-6">
-              <label className="form-label small text-secondary">Webhook URL</label>
+              <label htmlFor="edit-webhook-url" className="form-label small text-secondary">Webhook URL</label>
               <input
+                id="edit-webhook-url"
                 type="text"
                 className={`form-control bg-dark text-light border-secondary border-opacity-50 ${editForm.formState.errors.webhook_url ? 'is-invalid' : ''}`}
                 {...editForm.register('webhook_url')}
@@ -639,7 +661,7 @@ export default function ClientsPage() {
           <Modal.Header closeButton closeVariant="white" className="border-secondary border-opacity-25 px-4 py-3">
             <Modal.Title className="fs-5 fw-bold brand-title text-white d-flex align-items-center gap-2">
               <i className="bi bi-braces text-warning"></i>
-              Metadata JSON: {inspectMetadataClient.company_name}
+              <span>Metadata JSON: {inspectMetadataClient.company_name}</span>
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="px-4 py-3">
@@ -679,7 +701,7 @@ export default function ClientsPage() {
           <Modal.Header closeButton closeVariant="white" className="border-danger border-opacity-25 px-4 py-3">
             <Modal.Title className="fs-5 fw-bold text-danger d-flex align-items-center gap-2">
               <i className="bi bi-exclamation-octagon-fill"></i>
-              Konfirmasi Hapus Klien
+              <span>Konfirmasi Hapus Klien</span>
             </Modal.Title>
           </Modal.Header>
           <Modal.Body className="px-4 py-3">
@@ -703,8 +725,8 @@ export default function ClientsPage() {
               onClick={() => deleteMutation.mutate(deleteConfirmClient.id)}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending && <span className="spinner-border spinner-border-sm" role="status" />}
-              Hapus Klien
+              {deleteMutation.isPending && <output className="spinner-border spinner-border-sm" />}
+              <span>Hapus Klien</span>
             </button>
           </Modal.Footer>
         </Modal>

@@ -112,7 +112,7 @@ export default function LoginPage({ onLoginSuccess }) {
   const handleQuickLogin = async (role) => {
     clearError();
     setActiveRoleLoggingIn(role);
-    const cred = DEMO_CREDENTIALS[role];
+    const cred = /** @type {Record<string, any>} */ (DEMO_CREDENTIALS)[role];
     if (cred) {
       setEmail(cred.email);
       setPassword(cred.password);
@@ -198,7 +198,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     <div>
                       <h5 className="text-white mb-0 fw-semibold d-flex align-items-center gap-2">
                         <i className="bi bi-person-gear text-info"></i>
-                        Pilih Akun Demo (1-Click Login)
+                        <span>Pilih Akun Demo (1-Click Login)</span>
                       </h5>
                       <span className="text-secondary small">
                         Masuk instan tanpa password & bebas beralih role di dashboard
@@ -213,11 +213,10 @@ export default function LoginPage({ onLoginSuccess }) {
                     {ROLE_DEMO_ITEMS.map((item) => (
                       <div
                         key={item.role}
-                        className={`card bg-dark bg-opacity-60 border p-3 transition-all cursor-pointer ${
+                        className={`card bg-dark bg-opacity-60 border p-3 transition-all ${
                           item.borderClass
                         } ${activeRoleLoggingIn === item.role ? 'glow-primary' : ''}`}
-                        style={{ cursor: 'pointer', transition: 'all 0.2s ease-in-out' }}
-                        onClick={() => handleQuickLogin(item.role)}
+                        style={{ transition: 'all 0.2s ease-in-out' }}
                       >
                         <div className="d-flex align-items-center justify-content-between">
                           <div className="d-flex align-items-center gap-3">
@@ -240,14 +239,11 @@ export default function LoginPage({ onLoginSuccess }) {
                             type="button"
                             className="btn btn-sm btn-outline-light d-flex align-items-center gap-1 px-3"
                             disabled={isLoading}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleQuickLogin(item.role);
-                            }}
+                            onClick={() => handleQuickLogin(item.role)}
                           >
                             {activeRoleLoggingIn === item.role ? (
                               <>
-                                <span className="spinner-border spinner-border-sm" role="status" />
+                                <output className="spinner-border spinner-border-sm" />
                                 <span>Masuk...</span>
                               </>
                             ) : (
@@ -283,7 +279,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 <div>
                   <h5 className="text-white mb-1 fw-semibold d-flex align-items-center gap-2">
                     <i className="bi bi-key text-primary"></i>
-                    Masuk Manual (Demo)
+                    <span>Masuk Manual (Demo)</span>
                   </h5>
                   <p className="text-secondary small mb-4">
                     Atau ketik email dan password salah satu akun di samping
@@ -291,12 +287,13 @@ export default function LoginPage({ onLoginSuccess }) {
 
                   <form onSubmit={handleSubmit}>
                     <div className="mb-3">
-                      <label className="form-label text-secondary small mb-1">Alamat Email</label>
+                      <label htmlFor="demo-email-input" className="form-label text-secondary small mb-1">Alamat Email</label>
                       <div className="input-group">
                         <span className="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">
                           <i className="bi bi-envelope"></i>
                         </span>
                         <input
+                          id="demo-email-input"
                           type="email"
                           required
                           value={email}
@@ -308,12 +305,13 @@ export default function LoginPage({ onLoginSuccess }) {
                     </div>
 
                     <div className="mb-4">
-                      <label className="form-label text-secondary small mb-1">Password</label>
+                      <label htmlFor="demo-password-input" className="form-label text-secondary small mb-1">Password</label>
                       <div className="input-group">
                         <span className="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">
                           <i className="bi bi-lock"></i>
                         </span>
                         <input
+                          id="demo-password-input"
                           type={showPassword ? 'text' : 'password'}
                           required
                           value={password}
@@ -339,7 +337,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     >
                       {isLoading && !activeRoleLoggingIn ? (
                         <>
-                          <span className="spinner-border spinner-border-sm" role="status" />
+                          <output className="spinner-border spinner-border-sm" />
                           <span>Memverifikasi...</span>
                         </>
                       ) : (
@@ -374,7 +372,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <div className="text-center mb-4">
               <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-1 mb-2">
                 <i className="bi bi-lock-fill me-1"></i>
-                Portal Otentikasi Standar
+                <span>Portal Otentikasi Standar</span>
               </span>
               <h4 className="text-white fw-bold mb-1">Masuk ke Akun Anda</h4>
               <p className="text-secondary small mb-0">
@@ -384,12 +382,13 @@ export default function LoginPage({ onLoginSuccess }) {
 
             <form onSubmit={handleSubmit} className="d-flex flex-column gap-3">
               <div>
-                <label className="form-label text-secondary small fw-medium mb-1">Alamat Email</label>
+                <label htmlFor="test-email-input" className="form-label text-secondary small fw-medium mb-1">Alamat Email</label>
                 <div className="input-group">
                   <span className="input-group-text bg-dark border-secondary border-opacity-25 text-secondary">
                     <i className="bi bi-envelope"></i>
                   </span>
                   <input
+                    id="test-email-input"
                     type="email"
                     required
                     value={email}
@@ -402,7 +401,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
               <div>
                 <div className="d-flex justify-content-between align-items-center mb-1">
-                  <label className="form-label text-secondary small fw-medium mb-0">Kata Sandi (Password)</label>
+                  <label htmlFor="test-password-input" className="form-label text-secondary small fw-medium mb-0">Kata Sandi (Password)</label>
                   <span className="text-muted small" style={{ fontSize: '0.75rem' }}>Wajib diisi</span>
                 </div>
                 <div className="input-group">
@@ -410,6 +409,7 @@ export default function LoginPage({ onLoginSuccess }) {
                     <i className="bi bi-shield-lock"></i>
                   </span>
                   <input
+                    id="test-password-input"
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
@@ -451,7 +451,7 @@ export default function LoginPage({ onLoginSuccess }) {
               >
                 {isLoading ? (
                   <>
-                    <span className="spinner-border spinner-border-sm" role="status" />
+                    <output className="spinner-border spinner-border-sm" />
                     <span>Memverifikasi Kredensial...</span>
                   </>
                 ) : (
@@ -468,7 +468,7 @@ export default function LoginPage({ onLoginSuccess }) {
               <details className="text-secondary small">
                 <summary className="cursor-pointer text-info user-select-none mb-2" style={{ cursor: 'pointer' }}>
                   <i className="bi bi-card-checklist me-1"></i>
-                  Lihat Kredensial Pengujian (Demo Cheatsheet)
+                  <span>Lihat Kredensial Pengujian (Demo Cheatsheet)</span>
                 </summary>
                 <div className="p-3 bg-black bg-opacity-40 rounded border border-secondary border-opacity-20 mono-font small mt-2">
                   <div className="text-secondary mb-2" style={{ fontSize: '0.75rem' }}>
