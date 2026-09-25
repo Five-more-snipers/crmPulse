@@ -1,9 +1,13 @@
 // @ts-check
+import crypto from 'node:crypto';
+import dotenv from 'dotenv';
 import { clientRepository } from '../repositories/clientRepository.js';
 import { auditRepository } from '../repositories/auditRepository.js';
 import { userRepository } from '../repositories/userRepository.js';
 import { hashPassword } from '../utils/password.js';
 import db from './database.js';
+
+dotenv.config();
 
 console.log('🌱 [Seeding] Starting technical clients database seed...');
 
@@ -195,6 +199,7 @@ db.exec('DELETE FROM clients;');
 db.exec('DELETE FROM audit_trails;');
 db.exec('DELETE FROM technical_activities;');
 
+/** @type {import('../repositories/clientRepository.js').ClientRecord[]} */
 const createdClients = [];
 
 for (const client of sampleClients) {
@@ -212,7 +217,7 @@ for (const client of sampleClients) {
 // Seed sample technical activities & incidents
 const sampleActivities = [
   {
-    client_id: createdClients[0].id, // StripeGateway Corp
+    client_id: createdClients[0]?.id || '', // StripeGateway Corp
     activity_type: 'CONFIG_CHANGE',
     title: 'Peningkatan Kuota Rate Limit RPS ke 2500',
     content: 'Peningkatan batas rate limit disetujui untuk mengantisipasi lonjakan trafik transaksi kuartal 4.',
@@ -220,7 +225,7 @@ const sampleActivities = [
     performed_by: 'Solutions Architect',
   },
   {
-    client_id: createdClients[1].id, // Nexus Cloud Analytics
+    client_id: createdClients[1]?.id || '', // Nexus Cloud Analytics
     activity_type: 'INCIDENT',
     title: 'Webhook 504 Gateway Timeout pada Endpoint CRM',
     content: 'Penerima webhook mengalami timeout berulang selama 12 menit akibat koneksi pool database internal jenuh.',
@@ -228,7 +233,7 @@ const sampleActivities = [
     performed_by: 'DevOps / SRE',
   },
   {
-    client_id: createdClients[2].id, // FinTech Pulse Payments
+    client_id: createdClients[2]?.id || '', // FinTech Pulse Payments
     activity_type: 'KEY_ROTATION',
     title: 'Rotasi Rutin Kunci API & Pembaruan Sertifikat mTLS',
     content: 'Rotasi secret key API v2.4 dan penandatanganan ulang sertifikat mutual TLS 2048-bit.',
@@ -236,7 +241,7 @@ const sampleActivities = [
     performed_by: 'Security Officer',
   },
   {
-    client_id: createdClients[3].id, // HyperScale Logistics API
+    client_id: createdClients[3]?.id || '', // HyperScale Logistics API
     activity_type: 'MEETING',
     title: 'Review Arsitektur Migrasi Versi API v2.0 ke v2.4',
     content: 'Rapat evaluasi teknis membahas deprecation query parameter dan payload JSON format baru.',
@@ -244,7 +249,7 @@ const sampleActivities = [
     performed_by: 'Technical Account Manager',
   },
   {
-    client_id: createdClients[7].id, // Quantum Ledger Blockchain
+    client_id: createdClients[7]?.id || '', // Quantum Ledger Blockchain
     activity_type: 'INCIDENT',
     title: 'Peringatan Latensi Spike > 800ms pada Node RPC',
     content: 'Deteksi spike latensi webhook selama sinkronisasi blok transaksi. Diberikan rekomendasi tuning buffer.',
@@ -254,10 +259,12 @@ const sampleActivities = [
 ];
 
 for (const act of sampleActivities) {
+  // Use cryptographically secure pseudorandom number generator (CSPRNG) instead of Math.random()
+  const randomHoursAgo = crypto.randomInt(0, 48);
   const stmt = db.prepare(`
     INSERT INTO technical_activities (
       id, client_id, activity_type, title, content, severity, performed_by, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '-${Math.floor(Math.random() * 48)} hours'))
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now', '-' || ? || ' hours'))
   `);
   stmt.run(
     crypto.randomUUID(),
@@ -266,7 +273,8 @@ for (const act of sampleActivities) {
     act.title,
     act.content,
     act.severity,
-    act.performed_by
+    act.performed_by,
+    randomHoursAgo
   );
 }
 
@@ -274,11 +282,33 @@ console.log(`✅ [Seeding] Successfully seeded ${sampleClients.length} clients a
 
 // Seed 4 Role Accounts (1 user per required role)
 console.log('👤 [Seeding] Seeding role-based user accounts...');
+
+/**
+ * Resolves a role's password securely without hardcoding:
+ * 1. Checks specific role env var: ADMIN_PASSWORD, ARCHITECT_PASSWORD, etc.
+ * 2. Checks general seed env var: SEED_DEFAULT_PASSWORD
+ * 3. Falls back to generating a CSPRNG secure random password using crypto.randomBytes
+ *
+ * @param {string} role
+ * @returns {{ password: string, isFromEnv: boolean }}
+ */
+function getRolePassword(role) {
+  const envVarName = `${role.toUpperCase()}_PASSWORD`;
+  const envVal = process.env[envVarName] || process.env.SEED_DEFAULT_PASSWORD;
+
+  if (envVal?.trim()) {
+    return { password: envVal.trim(), isFromEnv: true };
+  }
+
+  // Generate a cryptographically secure password using CSPRNG crypto.randomBytes
+  const generatedPassword = crypto.randomBytes(12).toString('base64url');
+  return { password: generatedPassword, isFromEnv: false };
+}
+
 const roleUsers = [
   {
     id: 'usr-admin-01',
     email: 'admin@devpulse.io',
-    password: 'admin123',
     name: 'Sarah Connor',
     role: 'ADMIN',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
@@ -286,7 +316,6 @@ const roleUsers = [
   {
     id: 'usr-architect-01',
     email: 'architect@devpulse.io',
-    password: 'architect123',
     name: 'Alex Thorne',
     role: 'ARCHITECT',
     avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
@@ -294,7 +323,6 @@ const roleUsers = [
   {
     id: 'usr-tam-01',
     email: 'tam@devpulse.io',
-    password: 'tam123',
     name: 'Maya Lin',
     role: 'TAM',
     avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
@@ -302,7 +330,6 @@ const roleUsers = [
   {
     id: 'usr-devops-01',
     email: 'devops@devpulse.io',
-    password: 'devops123',
     name: 'Ryan Vance',
     role: 'DEVOPS',
     avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
@@ -311,8 +338,10 @@ const roleUsers = [
 
 for (const u of roleUsers) {
   const existing = userRepository.findByEmail(u.email);
+  const { password, isFromEnv } = getRolePassword(u.role);
+
   if (!existing) {
-    const { hash, salt } = hashPassword(u.password);
+    const { hash, salt } = hashPassword(password);
     userRepository.create({
       id: u.id,
       email: u.email,
@@ -323,8 +352,20 @@ for (const u of roleUsers) {
       avatar_url: u.avatar_url,
     });
     console.log(`  + User created: ${u.email} [${u.role}] - ${u.name}`);
+    if (isFromEnv) {
+      console.log(`    🔑 Password source: Environment variable (${u.role}_PASSWORD / SEED_DEFAULT_PASSWORD)`);
+    } else {
+      console.log(`    🔑 Password source: CSPRNG Generated (crypto.randomBytes) -> ${password}`);
+    }
+  } else if (isFromEnv) {
+    // If an explicit environment variable was provided, update password for existing account
+    const { hash, salt } = hashPassword(password);
+    db.prepare(`
+      UPDATE users SET password_hash = ?, salt = ?, updated_at = datetime('now') WHERE id = ?
+    `).run(hash, salt, existing.id);
+    console.log(`  ↻ Updated password from environment variable for: ${u.email} [${u.role}]`);
   } else {
-    console.log(`  ~ User already exists: ${u.email} [${u.role}]`);
+    console.log(`  ~ User already exists: ${u.email} [${u.role}] (password unchanged)`);
   }
 }
 console.log('✅ [Seeding] All role accounts ready!');
