@@ -14,6 +14,7 @@ import { errorHandler } from './middlewares/errorHandler.js';
 dotenv.config();
 
 const app = express();
+app.disable("x-powered-by");
 const PORT = process.env.PORT || 5000;
 
 // Middleware
@@ -43,10 +44,10 @@ app.get('/api/health', (req, res) => {
       success: true,
       status: 'ok',
       service: 'DevPulse CRM API',
-      timestamp: row.current_time,
+      timestamp: row?.current_time,
       database: {
         engine: 'SQLite 3',
-        version: row.sqlite_ver,
+        version: row?.sqlite_ver,
         connected: true,
       },
       uptime: process.uptime(),
@@ -56,7 +57,7 @@ app.get('/api/health', (req, res) => {
       success: false,
       status: 'error',
       message: 'Database query failed',
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Database query failed',
     });
   }
 });
