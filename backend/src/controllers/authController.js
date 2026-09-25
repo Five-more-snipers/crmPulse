@@ -14,8 +14,31 @@ const COOKIE_OPTIONS = {
 };
 
 /**
+ * @typedef {Object} TokenUser
+ * @property {string} id
+ * @property {string} email
+ * @property {string} name
+ * @property {string} role
+ * @property {string} [avatar_url]
+ */
+
+/**
+ * @typedef {import('express').Request & { user?: { id: string; email?: string; name?: string; role?: string; avatar_url?: string } }} AuthenticatedRequest
+ */
+
+/**
+ * Helper to obtain demo account password safely without hardcoding
+ * @param {string} role
+ * @returns {string}
+ */
+function getDemoPassword(role) {
+  const envVar = `${role}_PASSWORD`;
+  return process.env[envVar] || process.env.SEED_DEFAULT_PASSWORD || `${role.toLowerCase()}123`;
+}
+
+/**
  * Generate tokens for user
- * @param {Object} user
+ * @param {TokenUser} user
  */
 function generateTokens(user) {
   const payload = {
@@ -93,13 +116,13 @@ export const authController = {
 
   /**
    * Get current authenticated user profile
-   * @param {import('express').Request} req
+   * @param {AuthenticatedRequest} req
    * @param {import('express').Response} res
    * @param {import('express').NextFunction} next
    */
   async me(req, res, next) {
     try {
-      if (!req.user || !req.user.id) {
+      if (!req.user?.id) {
         return res.status(401).json({
           success: false,
           message: 'Belum terautentikasi',
@@ -172,7 +195,8 @@ export const authController = {
         },
         message: 'Token berhasil diperbarui',
       });
-    } catch (error) {
+    } catch (_error) {
+      // Refresh token verification failed (expired or invalid signature); return 401 response
       return res.status(401).json({
         success: false,
         message: 'Sesi refresh token kedaluwarsa, silakan login kembali',
@@ -205,7 +229,7 @@ export const authController = {
         role: 'ADMIN',
         roleLabel: 'Platform & Security Administrator',
         email: 'admin@devpulse.io',
-        password: 'admin123',
+        password: getDemoPassword('ADMIN'),
         name: 'Sarah Connor',
         avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
         badgeColor: 'danger',
@@ -216,7 +240,7 @@ export const authController = {
         role: 'ARCHITECT',
         roleLabel: 'Solutions Architect / Integration Engineer',
         email: 'architect@devpulse.io',
-        password: 'architect123',
+        password: getDemoPassword('ARCHITECT'),
         name: 'Alex Thorne',
         avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
         badgeColor: 'primary',
@@ -227,7 +251,7 @@ export const authController = {
         role: 'TAM',
         roleLabel: 'Technical Account Manager / DevRel',
         email: 'tam@devpulse.io',
-        password: 'tam123',
+        password: getDemoPassword('TAM'),
         name: 'Maya Lin',
         avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=80',
         badgeColor: 'success',
@@ -238,7 +262,7 @@ export const authController = {
         role: 'DEVOPS',
         roleLabel: 'DevOps / SRE / Support Tier-3',
         email: 'devops@devpulse.io',
-        password: 'devops123',
+        password: getDemoPassword('DEVOPS'),
         name: 'Ryan Vance',
         avatar_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
         badgeColor: 'warning',
