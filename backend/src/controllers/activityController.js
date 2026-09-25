@@ -1,4 +1,5 @@
 // @ts-check
+import crypto from 'node:crypto';
 import { activityRepository } from '../repositories/activityRepository.js';
 
 /**
@@ -7,6 +8,8 @@ import { activityRepository } from '../repositories/activityRepository.js';
 export const activityController = {
   /**
    * GET /api/activities
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
    */
   async getActivities(req, res) {
     try {
@@ -24,15 +27,18 @@ export const activityController = {
         message: 'Aktivitas teknis berhasil dimuat',
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal memuat aktivitas teknis';
       return res.status(500).json({
         success: false,
-        message: error.message || 'Gagal memuat aktivitas teknis',
+        message,
       });
     }
   },
 
   /**
    * POST /api/activities
+   * @param {import('express').Request & { user?: any }} req
+   * @param {import('express').Response} res
    */
   async createActivity(req, res) {
     try {
@@ -57,9 +63,10 @@ export const activityController = {
         message: 'Aktivitas teknis berhasil dicatat',
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Gagal mencatat aktivitas teknis';
       return res.status(500).json({
         success: false,
-        message: error.message || 'Gagal mencatat aktivitas teknis',
+        message,
       });
     }
   },
@@ -67,21 +74,28 @@ export const activityController = {
   /**
    * POST /api/monitoring/webhook-ping
    * Simulate or execute real ping on client webhook endpoint
+   * @param {import('express').Request} req
+   * @param {import('express').Response} res
    */
   async pingWebhook(req, res) {
     try {
       const { webhook_url, company_name } = req.body;
-      const startTime = Date.now();
 
-      // Simulated network probe with realistic latency
-      const simulatedLatency = Math.floor(Math.random() * 180) + 20; // 20ms - 200ms
+      // Simulated network probe with realistic latency (20ms - 200ms)
+      const simulatedLatency = crypto.randomInt(20, 201);
       await new Promise((resolve) => setTimeout(resolve, Math.min(simulatedLatency, 100)));
 
       // If URL contains 'sandbox' or 'mock' or valid URL, return healthy
       const isDegraded = simulatedLatency > 150;
       const isFailing = !webhook_url || webhook_url.includes('failing') || webhook_url.includes('error');
 
-      const status = isFailing ? 'failing' : isDegraded ? 'degraded' : 'healthy';
+      let status = 'healthy';
+      if (isFailing) {
+        status = 'failing';
+      } else if (isDegraded) {
+        status = 'degraded';
+      }
+      
       const httpStatus = isFailing ? 502 : 200;
 
       return res.json({
@@ -97,10 +111,12 @@ export const activityController = {
         message: `Probe webhook endpoint selesai: ${status.toUpperCase()}`,
       });
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Probe webhook gagal';
       return res.status(500).json({
         success: false,
-        message: error.message || 'Probe webhook gagal',
+        message,
       });
     }
   },
 };
+
