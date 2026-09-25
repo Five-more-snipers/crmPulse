@@ -195,13 +195,16 @@ export const authController = {
         },
         message: 'Token berhasil diperbarui',
       });
-    } catch (_error) {
-      // Refresh token verification failed (expired or invalid signature); return 401 response
-      return res.status(401).json({
-        success: false,
-        message: 'Sesi refresh token kedaluwarsa, silakan login kembali',
-      });
-    }
+        } catch (error) {
+          const errorMessage = error instanceof Error 
+            ? error.message 
+            : 'Sesi refresh token kedaluwarsa, silakan login kembali';
+
+          return res.status(401).json({
+            success: false,
+            message: errorMessage,
+          });
+        }
   },
 
   /**

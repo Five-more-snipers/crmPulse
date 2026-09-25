@@ -1,7 +1,7 @@
 // @ts-check
 import { create } from 'zustand';
 import apiClient from '../../services/apiClient';
-
+import axios from 'axios';
 /**
  * @typedef {Object} AuthUser
  * @property {string} id
@@ -12,13 +12,24 @@ import apiClient from '../../services/apiClient';
  */
 
 /**
+ * Helper to obtain demo account password safely without hardcoding
+ * @param {string} role
+ * @returns {string}
+ */
+function getDemoPassword(role) {
+  const envVar = `VITE_${role.toUpperCase()}_PASSWORD`;
+  const envVal = /** @type {any} */ (import.meta).env?.[envVar];
+  return envVal || `${role.toLowerCase()}123`;
+}
+
+/**
  * Pre-defined role accounts for 1-click login and quick switching
  */
 export const DEMO_CREDENTIALS = {
-  ADMIN: { email: 'admin@devpulse.io', password: 'admin123', defaultTab: 'overview' },
-  ARCHITECT: { email: 'architect@devpulse.io', password: 'architect123', defaultTab: 'kanban' },
-  TAM: { email: 'tam@devpulse.io', password: 'tam123', defaultTab: 'clients' },
-  DEVOPS: { email: 'devops@devpulse.io', password: 'devops123', defaultTab: 'monitoring' },
+  ADMIN: { email: 'admin@devpulse.io', password: getDemoPassword('ADMIN'), defaultTab: 'overview' },
+  ARCHITECT: { email: 'architect@devpulse.io', password: getDemoPassword('ARCHITECT'), defaultTab: 'kanban' },
+  TAM: { email: 'tam@devpulse.io', password: getDemoPassword('TAM'), defaultTab: 'clients' },
+  DEVOPS: { email: 'devops@devpulse.io', password: getDemoPassword('DEVOPS'), defaultTab: 'monitoring' },
 };
 
 const SAVED_TOKEN_KEY = 'devpulse_access_token';
@@ -35,6 +46,7 @@ try {
   if (storedUser) initialUser = JSON.parse(storedUser);
 } catch (e) {
   initialUser = null;
+  console.log(`Exception while doing something: ${e}`);
 }
 
 export const useAuthStore = create((set, get) => ({
@@ -87,7 +99,14 @@ export const useAuthStore = create((set, get) => ({
 
       return { success: true, user };
     } catch (err) {
-      const message = err.response?.data?.message || 'Gagal masuk. Periksa kembali email dan password Anda.';
+      let message = 'Gagal masuk. Periksa kembali email dan password Anda.';
+
+      if (axios.isAxiosError(err)) {
+        message = err.response?.data?.message || message;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
       set({ isLoading: false, error: message });
       return { success: false, message };
     }
@@ -160,6 +179,7 @@ export const useAuthStore = create((set, get) => ({
         isAuthenticated: false,
         isCheckingAuth: false,
       });
+      console.log(`Exception while doing something: ${err}`);
     }
   },
 }));

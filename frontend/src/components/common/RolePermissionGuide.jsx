@@ -297,11 +297,7 @@ export default function RolePermissionGuide({
   return (
     <div className="card glass-panel border border-secondary border-opacity-25 shadow-lg rounded-3 overflow-hidden">
       {/* Header Bar */}
-      <div
-        className="card-header bg-dark bg-opacity-90 border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2 cursor-pointer"
-        style={{ cursor: 'pointer' }}
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="card-header bg-dark bg-opacity-90 border-bottom border-secondary border-opacity-25 py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
         <div className="d-flex align-items-center gap-2">
           <div className="bg-primary bg-opacity-20 p-2 rounded text-primary d-flex align-items-center justify-content-center">
             <i className={`bi ${menuData.icon} fs-5`}></i>
@@ -324,11 +320,9 @@ export default function RolePermissionGuide({
         <div className="d-flex align-items-center gap-2">
           <button
             type="button"
+            aria-expanded={isExpanded}
             className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 py-1 px-3"
-            onClick={(/** @type {any} */ e) => {
-              e.stopPropagation();
-              setIsExpanded(!isExpanded);
-            }}
+            onClick={() => setIsExpanded(!isExpanded)}
           >
             <i className={`bi ${isExpanded ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
             <span>{isExpanded ? 'Sembunyikan' : 'Buka Matriks'}</span>
@@ -372,7 +366,7 @@ export default function RolePermissionGuide({
                           {isCurrent && (
                             <span className="badge bg-primary text-white px-2 py-0 small d-flex align-items-center gap-1">
                               <i className="bi bi-person-badge-fill"></i>
-                              Role Anda
+                              Role{' '}Anda
                             </span>
                           )}
                         </div>
@@ -400,8 +394,8 @@ export default function RolePermissionGuide({
                             <span>Akses Diizinkan:</span>
                           </div>
                           <ul className="list-unstyled mb-0 d-flex flex-column gap-1 text-secondary" style={{ fontSize: '0.75rem' }}>
-                            {perm.allowed.map((item, idx) => (
-                              <li key={idx} className="d-flex align-items-start gap-1">
+                            {perm.allowed.map((item) => (
+                              <li key={item} className="d-flex align-items-start gap-1">
                                 <i className="bi bi-check2 text-success mt-1"></i>
                                 <span className="text-light">{item}</span>
                               </li>
@@ -418,8 +412,8 @@ export default function RolePermissionGuide({
                             <span>Aksi Dibatasi (Restricted):</span>
                           </div>
                           <ul className="list-unstyled mb-0 d-flex flex-column gap-1 text-secondary" style={{ fontSize: '0.75rem' }}>
-                            {perm.restricted.map((item, idx) => (
-                              <li key={idx} className="d-flex align-items-start gap-1">
+                            {perm.restricted.map((item) => (
+                              <li key={item} className="d-flex align-items-start gap-1">
                                 <i className="bi bi-lock-fill text-danger mt-1"></i>
                                 <span className="text-danger-emphasis">{item}</span>
                               </li>
@@ -440,7 +434,7 @@ export default function RolePermissionGuide({
                       {isCurrent ? (
                         <div className="text-center py-1 text-primary small fw-semibold">
                           <i className="bi bi-check-circle me-1"></i>
-                          Sedang Aktif
+                          Sedang{' '}Aktif
                         </div>
                       ) : (
                         <button
